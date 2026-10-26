@@ -358,3 +358,25 @@ def test_binding_site_across_the_origin_round_trips():
     assert len(site.location.parts) == 2, "a wrapping site is two segments"
     assert (int(site.location.parts[0].start), int(site.location.parts[1].end)) == (90, 5)
     assert 'location="90-4"' in _packet(to_bytes(record), 0x05)
+
+
+def test_translated_feature_with_a_partial_codon_does_not_warn():
+    """A clipped feature keeps SnapGene's translate setting, without a partial codon.
+
+    Biopython warns when asked to translate a span that is not a whole number of codons,
+    and is due to make that an error, so the writer trims before translating.
+    """
+    import warnings
+
+    feature = (
+        '<Feature recentID="0" name="clipped" type="CDS" directionality="1">'
+        '<Segment range="30-51" color="#75c6a9" type="standard" translated="1"/>'
+        "</Feature>"
+    )  # 22 bases: deliberately not a multiple of three
+    record = read_snapgene(_file(feature))
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        written = to_bytes(record)
+    xml = _packet(written, 0x0A)
+    assert 'translated="1"' in xml, "SnapGene's own setting must survive"
+    assert '<Q name="translation"' in xml

@@ -249,10 +249,16 @@ def _features_xml(
         protein = ""
         if from_snapgene:
             if _first(feature, Q_TRANSLATED) == "1":
-                ok, protein = _is_clean_orf(_feature_nt(sequence, feature))
+                nucleotides = _feature_nt(sequence, feature)
+                ok, protein = _is_clean_orf(nucleotides)
                 as_cds = True
                 if not ok:
-                    protein = str(Seq(_feature_nt(sequence, feature)).translate())
+                    # SnapGene's own setting is honoured even where the span is not a clean
+                    # reading frame -- clipped features and alternative starts both occur --
+                    # but the partial codon is trimmed, because Biopython warns on it now and
+                    # is due to make it an error.
+                    whole = nucleotides[: len(nucleotides) // 3 * 3]
+                    protein = str(Seq(whole).translate()) if whole else ""
         elif (translate and native_type.rstrip("_") in _TRANSLATABLE) or _first(
             feature, Q_TRANSLATED
         ) == "1":
