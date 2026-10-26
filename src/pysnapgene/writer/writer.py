@@ -614,7 +614,7 @@ def write_snapgene(
     record:
         Any :class:`SeqRecord`. Feature colours are taken from the
         ``snapgene_color`` qualifier when present, otherwise ``default_color``.
-        A record read with :func:`pysnapgene_writer.read_snapgene` and not edited
+        A record read with :func:`pysnapgene.read_snapgene` and not edited
         is written back byte for byte.
     target:
         Path or open binary file object.
@@ -634,7 +634,7 @@ def write_snapgene(
         own behaviour on open.
     preserved_packets:
         Packets to write verbatim, by default those kept by
-        :func:`pysnapgene_writer.read_snapgene`.
+        :func:`pysnapgene.read_snapgene`.
 
     Returns
     -------

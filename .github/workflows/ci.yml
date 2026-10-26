@@ -40,7 +40,7 @@ jobs:
       - name: Install
         run: pip install -e ".[dev]"
       - name: Run tests
-        run: pytest --cov=pysnapgene_writer --cov-report=term-missing
+        run: pytest --cov=pysnapgene --cov-report=term-missing
       - name: Upload coverage
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
         uses: actions/upload-artifact@v4

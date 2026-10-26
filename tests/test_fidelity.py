@@ -13,8 +13,8 @@ from Bio.Seq import Seq
 from Bio.SeqFeature import SeqFeature, SimpleLocation
 from Bio.SeqRecord import SeqRecord
 
-from pysnapgene_writer import Q_TRANSLATED, iter_packets, pack_packet, read_snapgene, to_bytes
-from pysnapgene_writer.constants import Q_SEGMENT_NAMES
+from pysnapgene import Q_TRANSLATED, iter_packets, pack_packet, read_snapgene, to_bytes
+from pysnapgene.writer.constants import Q_SEGMENT_NAMES
 
 ORF = "ATG" + "AAA" * 5 + "GGC" * 5 + "TAA"  # 36 nt, a clean ORF
 SEQ = "ccccc" * 2 + str(Seq(ORF).reverse_complement()).lower() + "ttttt" * 10  # 96 nt

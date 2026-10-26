@@ -3,14 +3,15 @@ requires = ["hatchling>=1.21"]
 build-backend = "hatchling.build"
 
 [project]
-name = "pysnapgene-writer"
-version = "0.1.0"
-description = "Minimalist Python package to write SnapGene .dna files, preserving features, colours and properties"
+name = "pysnapgene-tools"
+version = "0.2.0"
+description = "SnapGene .dna files, sequence design and Golden Gate simulation for Python"
 readme = "README.md"
 requires-python = ">=3.9"
 license = { file = "LICENSE" }
 authors = [{ name = "Yuxuan Meng" }]
-keywords = ["snapgene", "dna", "plasmid", "bioinformatics", "biopython", "molecular-biology"]
+keywords = ["snapgene", "dna", "plasmid", "golden-gate", "codon-optimization",
+            "bioinformatics", "biopython", "molecular-biology"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
@@ -29,11 +30,11 @@ dev = ["pytest>=7", "pytest-cov>=4", "ruff>=0.4"]
 notebook = ["jupyter", "notebook"]
 
 [project.urls]
-Homepage = "https://github.com/meng-yx/pysnapgene-writer"
-Issues = "https://github.com/meng-yx/pysnapgene-writer/issues"
+Homepage = "https://github.com/meng-yx/pysnapgene-tools"
+Issues = "https://github.com/meng-yx/pysnapgene-tools/issues"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/pysnapgene_writer"]
+packages = ["src/pysnapgene"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -50,4 +51,4 @@ select = ["E", "F", "W", "I", "UP", "B", "C4"]
 ignore = ["B905"]
 
 [tool.coverage.run]
-source = ["pysnapgene_writer"]
+source = ["pysnapgene"]

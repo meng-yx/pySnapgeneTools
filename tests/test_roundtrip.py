@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from Bio.SeqFeature import SeqFeature, SimpleLocation
 
-from pysnapgene_writer import (
+from pysnapgene import (
     DEFAULT_COLOR,
     FLAG_CIRCULAR,
     FLAG_DOUBLE_STRANDED,
@@ -197,7 +197,7 @@ def test_notes_carry_identity(record, tmp_path):
 
 
 def test_unknown_packets_are_preserved(record, tmp_path):
-    from pysnapgene_writer import Packet
+    from pysnapgene import Packet
 
     extra = Packet(0x03, b"pretend enzyme set")
     path = tmp_path / "with_extra.dna"
@@ -208,7 +208,7 @@ def test_unknown_packets_are_preserved(record, tmp_path):
 
 
 def test_unknown_packets_survive_a_second_round_trip(record, tmp_path):
-    from pysnapgene_writer import Packet
+    from pysnapgene import Packet
 
     first = tmp_path / "a.dna"
     write_snapgene(record, first, preserved_packets=[Packet(0x03, b"xyz")])

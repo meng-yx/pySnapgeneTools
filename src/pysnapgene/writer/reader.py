@@ -292,7 +292,7 @@ def read_snapgene(
     preserve_unknown_packets:
         Keep packets this library does not model (enzyme sets, alignments, edit
         history) in ``record.annotations["snapgene_unknown_packets"]`` so that
-        :func:`pysnapgene_writer.write_snapgene` can put them back.
+        :func:`pysnapgene.write_snapgene` can put them back.
 
     Returns
     -------
