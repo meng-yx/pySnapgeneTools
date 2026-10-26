@@ -15,7 +15,7 @@ SnapGene versions are read and written the same way, but have not been tested.
 |---|---|
 | [`pysnapgene.writer`](#pysnapgenewriter--snapgene-dna-files) | read and write SnapGene `.dna`, keeping colours, feature types, direction and translation |
 | [`pysnapgene.design`](#pysnapgenedesign--codon-choice-and-repeats) | codon-optimise against a usage table; find and remove direct repeats |
-| [`pysnapgene.cloning`](#pysnapgenecloning--golden-gate-in-silico) | type IIS digestion and Golden Gate assembly |
+| [`pysnapgene.cloning`](#pysnapgenecloning--golden-gate-in-silico) | type IIS digestion, Golden Gate, and homology assembly (In-Fusion / Gibson / HiFi) |
 
 ```python
 from pysnapgene import read_snapgene, write_snapgene
@@ -237,7 +237,7 @@ contains on the order of 7.6 coincidental 10-mers but only ~0.1 coincidental 13-
 
 Only **direct** repeats on the same strand are found; inverted repeats are not modelled.
 
-## `pysnapgene.cloning` — Golden Gate in silico
+## `pysnapgene.cloning` — cloning in silico
 
 ```python
 from Bio.Restriction import BsaI
@@ -252,6 +252,38 @@ protein = translate_orf(product, atg_position)  # the fusion, reading frame wrap
 overhang enzyme each fragment's sequence begins with the overhang it shares with the
 fragment before it. Overhang length comes from the enzyme, so SapI's three bases work as
 well as BsaI's four.
+
+### Homology assembly — In-Fusion, Gibson, HiFi
+
+```python
+from pysnapgene.cloning import infusion, ambiguous_homology
+
+assembly = infusion([linearised_backbone, synthesised_fragment])   # 15 bp minimum
+assembly.sequence                 # the circular product
+assembly.junctions                # (upstream, downstream, homology, start) per join
+assembly.locate(1, 240)           # where base 240 of fragment 1 landed in the product
+ambiguous_homology(assembly)      # junctions whose homology occurs twice -- unpredictable
+```
+
+`homology_assemble` is the same function with the homology length as an argument (Gibson and
+HiFi usually want 20–40 bp). Fragments are taken in the order and orientation given — nothing
+is reordered or flipped — and a junction that *would* work reverse-complemented says so,
+because that is the usual mistake:
+
+```
+ValueError: no homology into fragment 1, but its reverse complement shares 20 bp
+            -- the fragment is the wrong way round
+```
+
+`max_homology` bounds the search; it does not truncate a join. Setting it below the real
+overlap makes the junction fail rather than shorten, since a shorter suffix of one fragment is
+not a prefix of the next.
+
+`offsets` and `locate` are what make the product annotatable: every feature of every input
+fragment can be moved onto the product, which is how an accurate map of an assembly gets
+built rather than guessed at.
+
+### Golden Gate
 
 `golden_gate` picks the insert fragment whose overhangs match the vector's stuffer and
 raises if none does — which is the check worth having, because an insert ordered against
