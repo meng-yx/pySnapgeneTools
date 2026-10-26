@@ -288,3 +288,73 @@ def test_fresh_record_gets_snapgenes_standard_packets():
     out = to_bytes(SeqRecord(Seq("ATGC" * 10)))
     kinds = [p.type for p in iter_packets(out)]
     assert kinds == [0x09, 0x00, 0x11, 0x08, 0x0A, 0x06, 0x0E, 0x1C]
+
+
+# --- details that cost real map content when they were wrong --------------------
+
+
+def test_explicit_label_qualifier_is_not_dropped():
+    """SnapGene usually leaves the label in the name attribute, but not always.
+
+    A file that carries an explicit ``<Q name="label">`` must get it back: dropping it
+    rewrites the feature XML and loses the byte-for-byte round trip.
+    """
+    feature = (
+        '<Feature recentID="0" name="insert" type="misc_feature" directionality="1">'
+        '<Segment range="1-30" color="#a6acb3" type="standard"/>'
+        '<Q name="label"><V text="insert"/></Q></Feature>'
+    )
+    written = to_bytes(read_snapgene(_file(feature)))
+    assert '<Q name="label"><V text="insert"/></Q>' in _packet(written, 0x0A)
+
+
+def test_label_is_not_invented_when_the_file_has_none():
+    feature = (
+        '<Feature recentID="0" name="insert" type="misc_feature" directionality="1">'
+        '<Segment range="1-30" color="#a6acb3" type="standard"/></Feature>'
+    )
+    written = to_bytes(read_snapgene(_file(feature)))
+    assert '<Q name="label"' not in _packet(written, 0x0A)
+
+
+def test_same_name_and_span_but_different_qualifiers_are_both_kept():
+    """Two annotations alike in name, span and type are still two annotations."""
+    feature = (
+        '<Feature recentID="0" name="insert" type="misc_feature" directionality="1">'
+        '<Segment range="1-30" color="#a6acb3" type="standard"/></Feature>'
+        '<Feature recentID="1" name="insert" type="misc_feature" directionality="1">'
+        '<Segment range="1-30" color="#a6acb3" type="standard"/>'
+        '<Q name="note"><V text="the other one"/></Q></Feature>'
+    )
+    record = read_snapgene(_file(feature))
+    assert len(record.features) == 2
+    assert _packet(to_bytes(record), 0x0A).count("<Feature ") == 2
+
+
+def test_short_binding_site_from_a_file_is_kept():
+    """A sub-15 bp site SnapGene wrote is an extra 5' match, not a primer of its own.
+
+    The length floor exists for primers built in Python, which SnapGene erases on open.
+    """
+    primer = (
+        '<Primer recentID="0" name="p1" sequence="CCCCCCCCCC">'
+        '<BindingSite location="10-19" boundStrand="0" annealedBases="CCCCCCCCCC"'
+        ' meltingTemperature="28"/></Primer>'
+    )
+    record = read_snapgene(_file("", primer))
+    assert len(record.features) == 1
+    assert 'location="10-19"' in _packet(to_bytes(record), 0x05)
+
+
+def test_binding_site_across_the_origin_round_trips():
+    """A site that wraps the origin used to raise ValueError on read."""
+    primer = (
+        '<Primer recentID="0" name="wrap" sequence="TTTTTCCCCC">'
+        '<BindingSite location="90-4" boundStrand="0" annealedBases="TTTTTCCCCC"'
+        ' meltingTemperature="28"/></Primer>'
+    )
+    record = read_snapgene(_file("", primer))
+    site = record.features[0]
+    assert len(site.location.parts) == 2, "a wrapping site is two segments"
+    assert (int(site.location.parts[0].start), int(site.location.parts[1].end)) == (90, 5)
+    assert 'location="90-4"' in _packet(to_bytes(record), 0x05)

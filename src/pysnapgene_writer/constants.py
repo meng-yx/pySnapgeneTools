@@ -20,6 +20,8 @@ __all__ = [
     "Q_ATTR_ORDER",
     "Q_PREDEF",
     "Q_SITE_XML",
+    "Q_LABEL_IS_QUALIFIER",
+    "Q_SITE_RANGE",
     "RESERVED_QUALIFIERS",
     "DEFAULT_COLOR",
     "MIN_PRIMER_LENGTH",
@@ -58,6 +60,13 @@ Q_PRIMER_SEQUENCE = "snapgene_primer_sequence"
 Q_ATTR_ORDER = "snapgene_attribute_order"  # attribute order of the <Feature>/<Primer>
 Q_PREDEF = "snapgene_predef"  # qualifier names whose values were <V predef=...>
 Q_SITE_XML = "snapgene_site_xml"  # a primer binding site's original XML
+# SnapGene usually leaves the label implicit in the <Feature name> attribute, but some
+# files carry an explicit <Q name="label"> saying the same thing. This records which,
+# so the writer neither invents one nor drops one.
+Q_LABEL_IS_QUALIFIER = "snapgene_label_qualifier"
+# A binding site's own location text. A site that crosses the origin cannot be
+# recovered from a Biopython location, whose start/end are the span's extremes.
+Q_SITE_RANGE = "snapgene_site_range"
 
 #: Keys the writer consumes itself rather than emitting as ``<Q>`` elements.
 RESERVED_QUALIFIERS = frozenset(
@@ -71,6 +80,8 @@ RESERVED_QUALIFIERS = frozenset(
         Q_ATTR_ORDER,
         Q_PREDEF,
         Q_SITE_XML,
+        Q_LABEL_IS_QUALIFIER,
+        Q_SITE_RANGE,
     }
 )
 

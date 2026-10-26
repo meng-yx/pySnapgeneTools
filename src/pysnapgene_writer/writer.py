@@ -42,11 +42,13 @@ from .constants import (
     Q_ATTR_ORDER,
     Q_ATTR_PREFIX,
     Q_COLOR,
+    Q_LABEL_IS_QUALIFIER,
     Q_NATIVE_TYPE,
     Q_PREDEF,
     Q_PRIMER_SEQUENCE,
     Q_SEGMENT_COLORS,
     Q_SEGMENT_NAMES,
+    Q_SITE_RANGE,
     Q_SITE_XML,
     Q_TRANSLATED,
     RESERVED_QUALIFIERS,
@@ -273,8 +275,13 @@ def _features_xml(
         for key, values in feature.qualifiers.items():
             if key in RESERVED_QUALIFIERS or key.startswith(Q_ATTR_PREFIX):
                 continue
-            if key == "label" and values and str(values[0]) == label:
-                continue  # it is the feature's name attribute
+            if (
+                key == "label"
+                and values
+                and str(values[0]) == label
+                and Q_LABEL_IS_QUALIFIER not in feature.qualifiers
+            ):
+                continue  # the reader synthesised it from the name attribute
             qualifiers[key] = list(values)
         if as_cds:
             stored_translation = _first(feature, "translation")
@@ -340,7 +347,10 @@ def _melting_temperature(bases: str) -> int:
 
 
 def _site_xml(feature: SeqFeature, sequence: str, start: int, end: int, bound: int) -> str:
-    location = f'location="{start}-{end - 1}" boundStrand="{bound}"'
+    # A site read from a file keeps its own range text, which is the only way an
+    # origin-crossing site survives: a Biopython location reports the span's extremes.
+    rangespec = _first(feature, Q_SITE_RANGE) or f"{start}-{end - 1}"
+    location = f'location="{rangespec}" boundStrand="{bound}"'
     stored = feature.qualifiers.get(Q_SITE_XML)
     if stored and all(location in site for site in stored):
         return "".join(stored)
@@ -526,15 +536,20 @@ def to_bytes(
 
     features: list[SeqFeature] = []
     primers: list[SeqFeature] = []
-    seen: set[tuple[str, int, int, int | None]] = set()
+    seen: set[tuple[object, ...]] = set()
     for feature in record.features:
         if feature.type == "source":
             continue
+        # Only an annotation that is identical in every respect is a duplicate. A map can
+        # legitimately carry two features with the same name, span and type that differ in
+        # their qualifiers, and collapsing those loses part of the map.
         key = (
             _label(feature),
             int(feature.location.start),
             int(feature.location.end),
             feature.location.strand,
+            feature.type,
+            repr(sorted((k, [str(x) for x in v]) for k, v in feature.qualifiers.items())),
         )
         if key in seen:
             continue  # the same annotation carried in twice
@@ -543,7 +558,11 @@ def to_bytes(
         # native type) stays a feature; any other primer_bind becomes a primer.
         if feature.type == "primer_bind" and not _first(feature, Q_NATIVE_TYPE):
             span = int(feature.location.end) - int(feature.location.start)
-            if span < min_primer_length:
+            # A site SnapGene itself wrote is kept whatever its length: a short one is
+            # an additional 5' match of a longer primer, not a primer of its own, and
+            # dropping it both loses data and breaks the byte-for-byte round trip. The
+            # floor exists for primers built in Python, which SnapGene would erase.
+            if span < min_primer_length and Q_ATTR_ORDER not in feature.qualifiers:
                 continue  # SnapGene would drop it on open
             primers.append(feature)
         else:

@@ -26,11 +26,13 @@ from .constants import (
     Q_ATTR_ORDER,
     Q_ATTR_PREFIX,
     Q_COLOR,
+    Q_LABEL_IS_QUALIFIER,
     Q_NATIVE_TYPE,
     Q_PREDEF,
     Q_PRIMER_SEQUENCE,
     Q_SEGMENT_COLORS,
     Q_SEGMENT_NAMES,
+    Q_SITE_RANGE,
     Q_SITE_XML,
     Q_TRANSLATED,
 )
@@ -143,7 +145,9 @@ def _parse_features(packet: Packet, record: SeqRecord) -> None:
             qualifiers[name] = values
 
         name = _text(node, "name")
-        if name and "label" not in qualifiers:
+        if "label" in qualifiers:
+            qualifiers[Q_LABEL_IS_QUALIFIER] = ["1"]
+        elif name:
             qualifiers["label"] = [name]
 
         native_type = _text(node, "type", "misc_feature") or "misc_feature"
@@ -211,23 +215,32 @@ def _parse_primers(packet: Packet, record: SeqRecord) -> None:
                     key = (int(match.group(1)), int(match.group(2)), match.group(3))
                     raw_sites.setdefault(key, []).append(site)
 
-        placed: set[tuple[int, int, int]] = set()
+        placed: set[tuple[str, str]] = set()
         for site in node.getElementsByTagName("BindingSite"):
             rangespec = _text(site, "location")
             if not rangespec:
                 continue
             bound = _text(site, "boundStrand", "0") or "0"
             strand = -1 if bound == "1" else 1
+            if (rangespec, bound) in placed:
+                continue  # SnapGene repeats each site as a "simplified" duplicate
+            placed.add((rangespec, bound))
             # primer coordinates sit one lower than a feature's at both ends
             start_text, _, end_text = rangespec.partition("-")
-            location = SimpleLocation(int(start_text), int(end_text) + 1, strand=strand)
-            key = (int(location.start), int(location.end), strand)
-            if key in placed:
-                continue  # SnapGene repeats each site as a "simplified" duplicate
-            placed.add(key)
-            if int(location.end) > length:
+            start, end = int(start_text), int(end_text) + 1
+            if start > end:  # the site runs over the origin
+                location = CompoundLocation(
+                    [
+                        SimpleLocation(start, length, strand=strand),
+                        SimpleLocation(0, end, strand=strand),
+                    ]
+                )
+            elif end > length:
                 continue
+            else:
+                location = SimpleLocation(start, end, strand=strand)
             site_qualifiers = dict(qualifiers)
+            site_qualifiers[Q_SITE_RANGE] = [rangespec]
             raw = raw_sites.get((int(start_text), int(end_text), bound))
             if raw:
                 site_qualifiers[Q_SITE_XML] = raw
