@@ -18,6 +18,7 @@ from .repeats import (
     break_repeats,
     longest_common_substring,
     longest_repeat,
+    longest_shared_substring,
 )
 
 __all__ = [
@@ -31,5 +32,6 @@ __all__ = [
     "DEFAULT_REPEAT_LIMIT",
     "longest_repeat",
     "longest_common_substring",
+    "longest_shared_substring",
     "break_repeats",
 ]

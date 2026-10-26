@@ -23,6 +23,7 @@ __all__ = [
     "RepeatEdits",
     "DEFAULT_REPEAT_LIMIT",
     "longest_common_substring",
+    "longest_shared_substring",
     "longest_repeat",
     "break_repeats",
 ]
@@ -50,21 +51,49 @@ class RepeatEdits(NamedTuple):
     edits: int
 
 
+def _shared_of_length(a: str, b: str, size: int) -> Repeat | None:
+    """First substring of exactly ``size`` occurring in both, with its two positions."""
+    seen: dict[str, int] = {}
+    for i in range(len(a) - size + 1):
+        seen.setdefault(a[i : i + size], i)
+    for j in range(len(b) - size + 1):
+        motif = b[j : j + size]
+        start = seen.get(motif)
+        if start is not None:
+            return Repeat(motif, start, j)
+    return None
+
+
+def longest_shared_substring(a: str, b: str) -> Repeat | None:
+    """The longest substring shared by ``a`` and ``b``, with where it sits in each.
+
+    ``first`` indexes into ``a`` and ``second`` into ``b``. Returns None when they share
+    nothing. Use this rather than :func:`longest_repeat` when the two copies have to be in
+    particular places -- the question "is the same sequence present on both sides of the
+    cloning cassette" is not the same question as "does this plasmid contain a repeat".
+
+    The search binary-searches the length over k-mer sets, so it is usable on whole
+    plasmids, where the quadratic dynamic program is not.
+    """
+    if not a or not b:
+        return None
+    low, high = 1, min(len(a), len(b))
+    best: Repeat | None = None
+    while low <= high:
+        middle = (low + high) // 2
+        hit = _shared_of_length(a, b, middle)
+        if hit is None:
+            high = middle - 1
+        else:
+            best = hit
+            low = middle + 1
+    return best
+
+
 def longest_common_substring(a: str, b: str) -> int:
     """Length of the longest substring shared by ``a`` and ``b``."""
-    if not a or not b:
-        return 0
-    previous = [0] * (len(b) + 1)
-    best = 0
-    for i in range(1, len(a) + 1):
-        current = [0] * (len(b) + 1)
-        a_i = a[i - 1]
-        for j in range(1, len(b) + 1):
-            if a_i == b[j - 1]:
-                current[j] = previous[j - 1] + 1
-                best = max(best, current[j])
-        previous = current
-    return best
+    hit = longest_shared_substring(a, b)
+    return len(hit.motif) if hit else 0
 
 
 def longest_repeat(

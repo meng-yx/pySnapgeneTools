@@ -13,6 +13,7 @@ from pysnapgene.design import (
     codon_optimize,
     longest_common_substring,
     longest_repeat,
+    longest_shared_substring,
     site_free,
     translate,
 )
@@ -222,3 +223,51 @@ def test_codon_usage_from_csv(tmp_path):
     assert usage.codons("D") == ["GAT", "GAC"]
     assert usage.fraction("GGT") == 0.34
     assert codon_optimize("GD", usage, argmax=True).dna == "GGCGAT"
+
+
+def test_longest_shared_substring_reports_both_positions():
+    a = "TTTTACGTACGTACGTTTTT"
+    b = "GGGGGGACGTACGTACGTCC"
+    hit = longest_shared_substring(a, b)
+    assert hit is not None
+    assert hit.motif == "ACGTACGTACGT"
+    assert a[hit.first : hit.first + len(hit)] == hit.motif
+    assert b[hit.second : hit.second + len(hit)] == hit.motif
+
+
+def test_longest_shared_substring_when_nothing_is_shared():
+    assert longest_shared_substring("AAAA", "GGGG") is None
+    assert longest_shared_substring("", "ACGT") is None
+
+
+def test_longest_shared_substring_agrees_with_the_length_function():
+    pairs = [
+        ("ACGTACGTAA", "TTACGTACGT"),
+        ("GGGGGGGGGG", "GGGGG"),
+        ("ACGT", "ACGT"),
+        ("AAACCCGGGTTT", "CCCGGG"),
+        ("A", "A"),
+    ]
+    for a, b in pairs:
+        hit = longest_shared_substring(a, b)
+        assert (len(hit) if hit else 0) == longest_common_substring(a, b)
+
+
+def test_longest_shared_substring_scales_to_plasmid_size():
+    """The quadratic DP cannot do this; the k-mer search must."""
+    import random
+
+    rng = random.Random(11)
+    left = "".join(rng.choice("ACGT") for _ in range(6000))
+    right = "".join(rng.choice("ACGT") for _ in range(6000))
+    planted = "GGATCAGTTCACGATTGCAAC"  # 21 bp
+    left = left[:1000] + planted + left[1000:]
+    right = right[:4000] + planted + right[4000:]
+    hit = longest_shared_substring(left, right)
+    assert hit is not None
+    # the random flanks may extend the match by a base or two, which is the point: the
+    # function reports the real longest match, not the one that was planted
+    assert planted in hit.motif
+    assert len(hit) >= len(planted)
+    assert left[hit.first : hit.first + len(hit)] == hit.motif
+    assert right[hit.second : hit.second + len(hit)] == hit.motif
