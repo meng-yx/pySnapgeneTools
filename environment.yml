@@ -1,0 +1,19 @@
+# Development environment for pysnapgene.
+#   conda env create -f environment.yml
+#   conda activate pysnapgene
+#   pip install -e .
+name: pysnapgene
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.11
+  - biopython>=1.79
+  - pytest>=7
+  - pytest-cov>=4
+  - ruff>=0.4
+  - jupyter
+  - notebook
+  - pip
+  - pip:
+      - -e .

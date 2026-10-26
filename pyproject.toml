@@ -1,0 +1,53 @@
+[build-system]
+requires = ["hatchling>=1.21"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pysnapgene"
+version = "0.1.0"
+description = "Read and write SnapGene .dna files from Python, preserving features, colours and properties"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { file = "LICENSE" }
+authors = [{ name = "Yuxuan Meng" }]
+keywords = ["snapgene", "dna", "plasmid", "bioinformatics", "biopython", "molecular-biology"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+dependencies = ["biopython>=1.79"]
+
+[project.optional-dependencies]
+dev = ["pytest>=7", "pytest-cov>=4", "ruff>=0.4"]
+notebook = ["jupyter", "notebook"]
+
+[project.urls]
+Homepage = "https://github.com/meng-yx/pySnapgeneWriter"
+Issues = "https://github.com/meng-yx/pySnapgeneWriter/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pysnapgene"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "C4"]
+ignore = ["B905"]
+
+[tool.coverage.run]
+source = ["pysnapgene"]
