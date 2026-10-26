@@ -6,8 +6,8 @@ import struct
 
 import pytest
 
-from pysnapgene import Packet, iter_packets, pack_packet
-from pysnapgene.packets import pack_packets
+from pysnapgene_writer import Packet, iter_packets, pack_packet
+from pysnapgene_writer.packets import pack_packets
 
 
 def test_pack_then_iterate():

@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from Bio.SeqFeature import SeqFeature, SimpleLocation
 
-from pysnapgene import (
+from pysnapgene_writer import (
     DEFAULT_COLOR,
     FLAG_CIRCULAR,
     FLAG_DOUBLE_STRANDED,
@@ -197,7 +197,7 @@ def test_notes_carry_identity(record, tmp_path):
 
 
 def test_unknown_packets_are_preserved(record, tmp_path):
-    from pysnapgene import Packet
+    from pysnapgene_writer import Packet
 
     extra = Packet(0x03, b"pretend enzyme set")
     path = tmp_path / "with_extra.dna"
@@ -208,7 +208,7 @@ def test_unknown_packets_are_preserved(record, tmp_path):
 
 
 def test_unknown_packets_survive_a_second_round_trip(record, tmp_path):
-    from pysnapgene import Packet
+    from pysnapgene_writer import Packet
 
     first = tmp_path / "a.dna"
     write_snapgene(record, first, preserved_packets=[Packet(0x03, b"xyz")])
@@ -258,6 +258,9 @@ def test_real_file_round_trip(real_dna_path, tmp_path):
     write_snapgene(original, path)
     back = read_snapgene(path)
 
+    # an unedited map comes back byte for byte
+    assert path.read_bytes() == real_dna_path.read_bytes()
+
     assert str(back.seq) == str(original.seq)
     assert back.annotations["topology"] == original.annotations["topology"]
 
@@ -277,3 +280,17 @@ def test_real_file_round_trip(real_dna_path, tmp_path):
         if not (f.type == "primer_bind" and int(f.location.end) - int(f.location.start) < 15)
     }
     assert kept == {key(f) for f in back.features}
+
+    def shown(record):
+        return {
+            key(f): (
+                f.type,
+                f.qualifiers.get("translation"),
+                f.qualifiers.get("snapgene_segment_names"),
+            )
+            for f in record.features
+        }
+
+    # same types, same proteins, same segment names
+    after = shown(back)
+    assert {k: v for k, v in shown(original).items() if k in after} == after

@@ -3,9 +3,9 @@ requires = ["hatchling>=1.21"]
 build-backend = "hatchling.build"
 
 [project]
-name = "pysnapgene"
+name = "pysnapgene-writer"
 version = "0.1.0"
-description = "Read and write SnapGene .dna files from Python, preserving features, colours and properties"
+description = "Minimalist Python package to write SnapGene .dna files, preserving features, colours and properties"
 readme = "README.md"
 requires-python = ">=3.9"
 license = { file = "LICENSE" }
@@ -29,11 +29,11 @@ dev = ["pytest>=7", "pytest-cov>=4", "ruff>=0.4"]
 notebook = ["jupyter", "notebook"]
 
 [project.urls]
-Homepage = "https://github.com/meng-yx/pySnapgeneWriter"
-Issues = "https://github.com/meng-yx/pySnapgeneWriter/issues"
+Homepage = "https://github.com/meng-yx/pysnapgene-writer"
+Issues = "https://github.com/meng-yx/pysnapgene-writer/issues"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/pysnapgene"]
+packages = ["src/pysnapgene_writer"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -50,4 +50,4 @@ select = ["E", "F", "W", "I", "UP", "B", "C4"]
 ignore = ["B905"]
 
 [tool.coverage.run]
-source = ["pysnapgene"]
+source = ["pysnapgene_writer"]

@@ -15,7 +15,7 @@ from Bio.Seq import Seq
 from Bio.SeqFeature import SeqFeature, SimpleLocation
 from Bio.SeqRecord import SeqRecord
 
-from pysnapgene import Q_COLOR, Q_TRANSLATED
+from pysnapgene_writer import Q_COLOR, Q_TRANSLATED
 
 # a tiny circular "plasmid": a promoter, a clean ORF, a reverse CDS and a primer
 SEQUENCE = (

@@ -1,8 +1,8 @@
-# Development environment for pysnapgene.
+# Development environment for pysnapgene-writer.
 #   conda env create -f environment.yml
-#   conda activate pysnapgene
+#   conda activate pysnapgene-writer
 #   pip install -e .
-name: pysnapgene
+name: pysnapgene-writer
 channels:
   - conda-forge
   - bioconda

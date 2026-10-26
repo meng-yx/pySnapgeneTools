@@ -1,11 +1,15 @@
-# pysnapgene
+# pysnapgene-writer
 
-Read **and write** SnapGene `.dna` files from Python, keeping the parts of a map that
-other tools throw away.
+A minimalist Python package to **write** SnapGene `.dna` files. It reads them too, so a
+map can be edited in Python and saved back with nothing lost. Its only dependency is
+Biopython.
 
-[![CI](https://github.com/meng-yx/pySnapgeneWriter/actions/workflows/ci.yml/badge.svg)](https://github.com/meng-yx/pySnapgeneWriter/actions/workflows/ci.yml)
+[![CI](https://github.com/meng-yx/pysnapgene-writer/actions/workflows/ci.yml/badge.svg)](https://github.com/meng-yx/pysnapgene-writer/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue)](https://www.python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+**Written for SnapGene 8.2** (tested with SnapGene 8.2.2 on macOS). Files from other
+SnapGene versions are read and written the same way, but have not been tested.
 
 ## Why
 
@@ -17,10 +21,10 @@ Biopython can parse SnapGene, but:
   translation flag, and every packet it does not model (enzyme sets, alignments, edit
   history) are dropped. Read a map and write it back and you get a grey, stripped file.
 
-`pysnapgene` round-trips all of that.
+`pysnapgene-writer` writes SnapGene files and round-trips all of that.
 
 ```python
-from pysnapgene import read_snapgene, write_snapgene
+from pysnapgene_writer import read_snapgene, write_snapgene
 
 record = read_snapgene("plasmid.dna")          # a normal Biopython SeqRecord
 record.features[3].qualifiers["snapgene_color"]
@@ -32,33 +36,41 @@ write_snapgene(record, "copy.dna")             # opens in SnapGene, colours inta
 ## Install
 
 ```bash
-pip install pysnapgene
+pip install pysnapgene-writer
 ```
 
 From source, with the development environment:
 
 ```bash
-git clone https://github.com/meng-yx/pySnapgeneWriter
-cd pySnapgeneWriter
+git clone https://github.com/meng-yx/pysnapgene-writer
+cd pysnapgene-writer
 conda env create -f environment.yml
-conda activate pysnapgene
+conda activate pysnapgene-writer
 pip install -e ".[dev]"
 pytest
 ```
 
 ## What survives a round trip
 
+A map that is read and written back without edits comes out **byte for byte identical**,
+so SnapGene treats the copy exactly like the original. After an edit, only the edited
+parts change. Everything else stays as SnapGene wrote it: attribute order, feature and
+primer IDs, packet order, and the notes, apart from the *last modified* date.
+
 | | preserved |
 |---|---|
 | sequence and topology (circular / linear) | yes |
 | double-stranded / methylation flags | yes |
 | feature positions, strands, multi-segment features | yes |
+| features with **no direction** (drawn as boxes) stay without one (`strand=None`) | yes |
 | **feature colours**, per segment | yes |
 | native SnapGene feature type (`misc_feature_` and friends) | yes |
 | feature qualifiers (`<Q>` elements) | yes |
 | **translation flag** and the translated protein | yes |
-| primers, as primers, with their binding sites | yes |
-| notes: UUID, accession, comments, dates | yes |
+| **segment names** (`-10`, `-35`, signal sequence) and features that cross the origin | yes |
+| primers, as primers, with their binding sites and descriptions | yes |
+| `primer_bind` *features* (e.g. coloured M13 sites) stay features | yes |
+| notes, whole: description, references, UUID, dates | yes |
 | unrecognised packets (enzyme sets, alignments, history) | yes, verbatim |
 
 SnapGene-only display properties are stored as ordinary qualifiers, so a `SeqRecord`
@@ -68,6 +80,7 @@ stays a `SeqRecord` and still works with the rest of Biopython:
 feature.qualifiers["snapgene_color"]        # ['#75c6a9']
 feature.qualifiers["snapgene_native_type"]  # ['misc_feature_']
 feature.qualifiers["snapgene_translated"]   # ['1'] when SnapGene shows a protein
+feature.qualifiers["snapgene_segment_names"]  # ['-10', '', '-35'], ascending
 feature.qualifiers["snapgene_attr_<name>"]  # any other <Feature> attribute
 ```
 
@@ -77,7 +90,7 @@ feature.qualifiers["snapgene_attr_<name>"]  # any other <Feature> attribute
 from Bio.Seq import Seq
 from Bio.SeqFeature import SeqFeature, SimpleLocation
 from Bio.SeqRecord import SeqRecord
-from pysnapgene import write_snapgene
+from pysnapgene_writer import write_snapgene
 
 record = SeqRecord(Seq("ATG" + "GTGAGCAAGGGCGAGGAG" * 20 + "TAA"),
                    id="pDemo", description="pDemo demo construct")
@@ -89,7 +102,19 @@ record.features.append(
 write_snapgene(record, "pDemo.dna")
 ```
 
-`examples/quickstart.ipynb` walks through reading, recolouring and writing a real plasmid.
+`examples/quickstart.ipynb` reads pUC19, adds an annotation and a sequencing primer, and
+writes `pUC19_modified.dna`. The map is not shipped here, because SnapGene's maps are
+copyrighted. Download it from the
+[SnapGene pUC19 page](https://www.snapgene.com/plasmids/basic_cloning_vectors/pUC19)
+into `examples/` first.
+
+A `primer_bind` feature you add becomes a primer in SnapGene's Primers list, written the
+way SnapGene writes one: binding site, melting temperature (an estimate within a few
+degrees of SnapGene's; SnapGene recalculates it), and the "simplified" copy of each site.
+SnapGene does not draw primers on the map until *Show Primers* is on. To make a
+`primer_bind` an ordinary feature instead, set `snapgene_native_type` to `primer_bind`.
+
+A feature's arrow comes from its strand: `1` or `-1` draws an arrow, `None` draws a box.
 
 ## Three details that decide whether the map looks right
 
@@ -102,7 +127,7 @@ These are the ones that cost time to work out, so they are worth stating plainly
 ```
 
 Leave `0x02` clear and SnapGene opens the file as **single-stranded** DNA — no
-complementary strand, no translation. `pysnapgene` sets `0x1e` plus the circular bit by
+complementary strand, no translation. `pysnapgene-writer` sets `0x1e` plus the circular bit by
 default, which is what SnapGene writes for a plasmid propagated in *E. coli*.
 
 **2. Colour is per segment and is never inferred.** A file written without a `color`
@@ -112,11 +137,11 @@ attribute renders entirely grey. Pass `default_color=` or set `snapgene_color` p
 `transl_table` and `translation` qualifiers. That is what ticks *Translate this feature in
 Sequence view*.
 
-On that last point, `pysnapgene` will not mark a feature as a translated CDS unless the
-span really is one — a whole number of codons with no internal stop. Feature boundaries
+On that last point, `pysnapgene-writer` will not mark a new feature as a translated CDS
+unless the span really is one — a whole number of codons with no internal stop. Feature boundaries
 carried over from another map frequently are not in frame, and marking those as CDS makes
 SnapGene display a nonsense protein. Such features keep their colour and position but are
-written as `misc_feature`.
+written as `misc_feature`. Features read from a SnapGene file keep their own setting.
 
 ## API
 
@@ -140,7 +165,7 @@ to_bytes(record, **same_kwargs) -> bytes
 The packet layer is public too, for anyone wanting to inspect a file:
 
 ```python
-from pysnapgene import iter_packets
+from pysnapgene_writer import iter_packets
 for packet in iter_packets(open("plasmid.dna", "rb")):
     print(f"0x{packet.type:02x} {packet.name:28} {len(packet)} bytes")
 ```
@@ -164,9 +189,12 @@ and writer both account for that.
 
 ## Limitations
 
-* Files written from scratch are **minimal**: cookie, DNA, features, primers and notes.
-  They open correctly but carry no enzyme sets, alignments or edit history unless those
-  packets came from a file you read (in which case they are preserved).
+* Files written from scratch are **minimal**: cookie, DNA, features, primers and notes,
+  plus the small default packets SnapGene always writes. They carry no enzyme sets or
+  edit history unless those packets came from a file you read (in which case they are
+  preserved).
+* Editing a map that was read keeps its SnapGene edit history as it was. SnapGene's
+  history view will not show the edits made in Python.
 * Protein and RNA SnapGene files are not supported; DNA only.
 * The format is reverse-engineered from public descriptions and from inspecting files.
   It is validated by round-tripping real SnapGene output, not against a published spec.
@@ -181,7 +209,8 @@ PYSNAPGENE_TEST_DNA=/path/to/real.dna pytest   # also round-trips a real file
 
 The suite builds its own SnapGene files rather than shipping a plasmid. Point
 `PYSNAPGENE_TEST_DNA` at any file SnapGene wrote and an extra test verifies that the
-sequence, every feature position, strand and colour survive a read/write/read cycle.
+file is written back byte for byte, and that the sequence and every feature position,
+strand, colour and translation survive a read/write/read cycle.
 
 ## Contributing
 

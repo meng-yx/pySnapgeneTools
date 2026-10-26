@@ -14,3 +14,6 @@ htmlcov/
 venv/
 .DS_Store
 *.dna.bak
+
+# SnapGene maps are copyrighted; download pUC19.dna yourself (see examples/quickstart.ipynb)
+examples/*.dna
