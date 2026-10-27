@@ -4,7 +4,7 @@ Python tools for plasmid design: read and **write** SnapGene `.dna` files, codon
 and de-repeat a designed sequence, and simulate Golden Gate assembly. Its only dependency
 is Biopython.
 
-[![CI](https://github.com/meng-yx/pysnapgene-tools/actions/workflows/ci.yml/badge.svg)](https://github.com/meng-yx/pysnapgene-tools/actions/workflows/ci.yml)
+[![CI](https://github.com/meng-yx/pysnapgene-writer/actions/workflows/ci.yml/badge.svg)](https://github.com/meng-yx/pysnapgene-writer/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue)](https://www.python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -47,20 +47,29 @@ the overhangs contribute residues of their own at both junctions.
 
 ## Install
 
-```bash
-pip install pysnapgene-tools
-```
-
-From source, with the development environment:
+**Not published yet** — there is no `pysnapgene-tools` on PyPI, so install from source:
 
 ```bash
-git clone https://github.com/meng-yx/pysnapgene-tools
-cd pysnapgene-tools
+git clone https://github.com/meng-yx/pysnapgene-writer    # repo still has the old name
+cd pysnapgene-writer
 conda env create -f environment.yml
 conda activate pysnapgene-tools
 pip install -e ".[dev]"
 pytest
 ```
+
+Or straight into an environment you already have, which is how this is used day to day:
+
+```bash
+pip install -e /path/to/the/checkout --no-deps
+```
+
+Packaging is ready for release — `pyproject.toml` builds a wheel and `.github/workflows/ci.yml`
+publishes on a `v*` tag — but nothing has been uploaded and the name is unclaimed. Publishing
+needs, in order: a PyPI account holding the `pysnapgene-tools` name, a trusted publisher (or the
+`PYPI_API_TOKEN` secret) on the `release` environment, and a tag. Until then `pip install
+pysnapgene-tools` installs nothing, or worse installs whatever someone else registers under that
+name, so do not put the command in anyone's instructions.
 
 ## `pysnapgene.writer` — SnapGene `.dna` files
 

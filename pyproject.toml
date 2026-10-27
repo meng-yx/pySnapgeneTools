@@ -30,8 +30,9 @@ dev = ["pytest>=7", "pytest-cov>=4", "ruff>=0.4"]
 notebook = ["jupyter", "notebook"]
 
 [project.urls]
-Homepage = "https://github.com/meng-yx/pysnapgene-tools"
-Issues = "https://github.com/meng-yx/pysnapgene-tools/issues"
+# The repo still carries the project's former name; update both if it is renamed.
+Homepage = "https://github.com/meng-yx/pysnapgene-writer"
+Issues = "https://github.com/meng-yx/pysnapgene-writer/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/pysnapgene"]
