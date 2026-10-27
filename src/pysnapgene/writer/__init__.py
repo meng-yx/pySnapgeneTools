@@ -28,6 +28,7 @@ from .constants import (
     Q_NATIVE_TYPE,
     Q_TRANSLATED,
 )
+from .origin import feature_start, set_origin
 from .packets import Packet, iter_packets, pack_packet
 from .reader import SnapGeneError, read_snapgene
 from .writer import to_bytes, write_snapgene
@@ -36,6 +37,8 @@ __all__ = [
     "read_snapgene",
     "write_snapgene",
     "to_bytes",
+    "set_origin",
+    "feature_start",
     "SnapGeneError",
     "Packet",
     "iter_packets",

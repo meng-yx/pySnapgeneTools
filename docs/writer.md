@@ -109,6 +109,41 @@ nonsense protein. Such features keep their colour and position but are written a
 not a clean frame its partial codon is trimmed before translating, because Biopython warns on
 one and is due to make it an error.
 
+## Moving the origin
+
+A plasmid has no natural first base, so where a map starts is a presentation choice — and a
+simulated product starts wherever the assembly left it, which is rarely where anyone wants to
+read it from. `set_origin` rotates a circular record so one base becomes base 1, usually the
+origin of replication, which makes a whole series of vectors numbered from the same landmark:
+
+```python
+from pysnapgene import read_snapgene, set_origin, write_snapgene
+
+record = read_snapgene("P0079.dna")
+set_origin(record, label="colE1_high_copy")   # or set_origin(record, 1657)
+write_snapgene(record, "P0079.dna")
+```
+
+`position` is 0-based, as everything on a Biopython record is; SnapGene's own *Set Origin*
+dialog counts from 1, so its 1658 is this 1657. Pass `label=` instead and the feature of that
+name supplies the position — it raises if no feature carries the label or if several do, since
+an ambiguous landmark would silently pick one. `feature_start(record, label)` is the same
+lookup on its own.
+
+The record is rotated in place and returned. Features keep their qualifiers, type, strand and
+length; a feature that ends up straddling the new origin comes back as a two-part
+`CompoundLocation`, which the writer stores as a single wrapping range such as `6250-120`.
+One that straddled the *old* origin becomes contiguous again. A negative or past-the-end
+coordinate cannot be written at all, which is why this is a function and not a slice.
+
+The one thing it drops is a primer's stored binding site (`snapgene_site_range`,
+`snapgene_site_xml`): those coordinates describe the old frame, and stale coordinates must not
+travel with a moved primer. The writer recomputes the site from the primer sequence, so the
+primer, its name and its own location all survive — only SnapGene's original site XML is lost,
+and with it the byte-for-byte round trip, which a rotation has broken anyway.
+
+Rotating a linear molecule would join its two ends, so that is refused.
+
 ## API
 
 ```python
@@ -116,6 +151,11 @@ read_snapgene(source, *, preserve_unknown_packets=True) -> SeqRecord
 ```
 
 `source` is a path, raw `bytes`, or an open binary file.
+
+```python
+set_origin(record, position=None, *, label=None) -> SeqRecord
+feature_start(record, label) -> int
+```
 
 ```python
 write_snapgene(record, target, *, circular=None, flags=None,
