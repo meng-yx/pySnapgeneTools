@@ -15,7 +15,7 @@ SnapGene versions are read and written the same way, but have not been tested.
 |---|---|
 | [`pysnapgene.writer`](#pysnapgenewriter--snapgene-dna-files) | read and write SnapGene `.dna`, keeping colours, feature types, direction and translation |
 | [`pysnapgene.design`](#pysnapgenedesign--codon-choice-and-repeats) | codon-optimise against a usage table; find and remove direct repeats |
-| [`pysnapgene.cloning`](#pysnapgenecloning--golden-gate-in-silico) | type IIS digestion, Golden Gate, and homology assembly (In-Fusion / Gibson / HiFi) |
+| [`pysnapgene.cloning`](#pysnapgenecloning--cloning-in-silico) | type IIS digestion, Golden Gate, and homology assembly (In-Fusion / Gibson / HiFi) |
 
 ```python
 from pysnapgene import read_snapgene, write_snapgene

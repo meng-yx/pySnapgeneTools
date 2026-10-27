@@ -380,3 +380,46 @@ def test_translated_feature_with_a_partial_codon_does_not_warn():
     xml = _packet(written, 0x0A)
     assert 'translated="1"' in xml, "SnapGene's own setting must survive"
     assert '<Q name="translation"' in xml
+
+
+def test_out_of_range_feature_is_refused_not_written():
+    """A location outside the sequence must raise, not produce an unreadable file.
+
+    Writing it emits a SnapGene range like ``-2-4``, which the reader cannot parse, so the
+    failure would otherwise surface much later as a corrupt map.
+    """
+    import pytest
+
+    record = SeqRecord(Seq(SEQ), id="pTest", description="pTest")
+    record.annotations["topology"] = "circular"
+    record.features.append(
+        SeqFeature(
+            SimpleLocation(-3, 3, strand=1),  # a site straddling the origin, written wrongly
+            type="protein_bind",
+            qualifiers={"label": ["XhoI"]},
+        )
+    )
+    with pytest.raises(ValueError, match="outside the"):
+        to_bytes(record)
+
+
+def test_origin_crossing_feature_in_a_compound_location_is_fine():
+    """The right way to say the same thing, and it round-trips."""
+    from Bio.SeqFeature import CompoundLocation
+
+    record = SeqRecord(Seq(SEQ), id="pTest", description="pTest")
+    record.annotations["topology"] = "circular"
+    record.features.append(
+        SeqFeature(
+            CompoundLocation(
+                [SimpleLocation(len(SEQ) - 3, len(SEQ), strand=1), SimpleLocation(0, 3, strand=1)]
+            ),
+            type="protein_bind",
+            qualifiers={"label": ["XhoI"]},
+        )
+    )
+    back = read_snapgene(to_bytes(record))
+    site = [f for f in back.features if f.qualifiers.get("label", [""])[0] == "XhoI"][0]
+    assert len(site.location.parts) == 2
+    assert int(site.location.parts[0].start) == len(SEQ) - 3
+    assert int(site.location.parts[1].end) == 3

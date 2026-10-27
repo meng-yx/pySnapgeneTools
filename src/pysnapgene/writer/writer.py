@@ -183,6 +183,15 @@ def _file_segments(feature: SeqFeature, length: int) -> list[tuple[int, int]]:
     if feature.location.strand == -1:
         parts = list(reversed(parts))
     ranges = [(int(p.start), int(p.end)) for p in parts]
+    # A location outside the sequence cannot be expressed as a SnapGene range, and writing one
+    # produces a file that will not parse back. Refuse it here, naming the feature, rather than
+    # emitting something unreadable: an origin-crossing feature belongs in a CompoundLocation.
+    for start, end in ranges:
+        if start < 0 or end > length or start >= end:
+            raise ValueError(
+                f"feature {_label(feature)!r} has a part at {start}-{end}, outside the "
+                f"{length} bp sequence; a feature crossing the origin needs a CompoundLocation"
+            )
     merged: list[tuple[int, int]] = []
     for start, end in ranges:
         if merged and merged[-1][1] == length and start == 0:
