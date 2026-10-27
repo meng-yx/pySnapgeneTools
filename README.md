@@ -1,7 +1,7 @@
 # pysnapgene-tools
 
-Python tools for plasmid design: read and **write** SnapGene `.dna` files, codon-optimise and
-de-repeat a designed sequence, and simulate the cloning step that produces it. Its only
+Python tools for plasmid design: read and **write** SnapGene `.dna` files, turn a protein into
+DNA a synthesis vendor will accept, and simulate the cloning step that produces it. Its only
 dependency is Biopython.
 
 [![CI](https://github.com/meng-yx/pysnapgene-writer/actions/workflows/ci.yml/badge.svg)](https://github.com/meng-yx/pysnapgene-writer/actions/workflows/ci.yml)
@@ -30,17 +30,19 @@ the translation flag, feature direction, and every packet it does not model are 
 map and write it back and you get a grey, stripped file.
 
 The other two subpackages exist for the rest of the job. A designed plasmid is only as good as
-the checks run on it, and two keep coming up: that no element is spelled the same way twice (or
-one recombination deletes what lies between the copies), and that the construct the vector
-actually produces is the one intended — which, for any assembly, means building it rather than
-counting bases, since the junctions contribute sequence of their own.
+the checks run on it, and three keep coming up: that no element is spelled the same way twice (or
+one recombination deletes what lies between the copies); that a synthesis vendor will accept the
+sequence, which turns on measures an exact-repeat search cannot see — two codon-differentiated
+copies of one protein share no run over 12 bp and are still 79 % identical base for base; and that
+the construct the vector actually produces is the one intended — which, for any assembly, means
+building it rather than counting bases, since the junctions contribute sequence of their own.
 
 ## The three subpackages
 
 | | what it does | detail |
 |---|---|---|
 | **`pysnapgene.writer`** | Reads and writes `.dna`, keeping feature colours, native types, direction, translation flags, primers, notes and unrecognised packets. Re-exported at the top level, so `from pysnapgene import read_snapgene` works. An unedited read/write is intended to be byte-for-byte identical; it currently is for 43 of 524 real files tested, and everything listed as preserved survives either way. `set_origin` rotates a circular map to a new first base, splitting whatever now straddles the origin. | [docs/writer.md](docs/writer.md) |
-| **`pysnapgene.design`** | `CodonUsage` + `codon_optimize` to encode a protein against a usage table, keeping chosen motifs out on both strands and keeping two copies of one element from sharing a long run. `longest_repeat`, `longest_shared_substring` and `break_repeats` to find direct repeats — origin-crossing ones included — and remove them with minimal synonymous edits inside spans you mark editable. | [docs/design.md](docs/design.md) |
+| **`pysnapgene.design`** | `build_dna` turns a parts list — proteins to encode, DNA to keep verbatim — into one sequence, deterministically: no seed, no sampling, same input same output. `unlike` spells a second copy of an element as differently as its codon table allows, `identity_floor` says how different that can be. `complexity_report` scores a sequence against a vendor's limits (repeat density, inexact repeat regions and their Tm, GC, homopolymers) and `fix_complexity` edits synonymously until they pass. `longest_repeat` and `break_repeats` remain for direct repeats alone, origin-crossing ones included. | [docs/design.md](docs/design.md) |
 | **`pysnapgene.cloning`** | `digest` and `excise` for type IIS enzymes, taking the overhang length from the enzyme. `golden_gate` to assemble an insert into a destination vector, refusing a mismatched overhang. `infusion` / `homology_assemble` for In-Fusion, Gibson and HiFi, reporting each junction and where every input fragment landed, so the product can be annotated rather than guessed at. `translate_orf` reads a fusion through the origin. | [docs/cloning.md](docs/cloning.md) |
 
 ```python
